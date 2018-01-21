@@ -10,3 +10,17 @@ What it does is :
 - send G32 / M665 / M666 multiple times
 - show a nice plot
 - gives you the M665 and M666 lines to copy/paste into your config.g
+
+Setup
+=====
+# create python virtualenv in order not to mess up your global python installation
+virtualenv .env
+# activate your environment
+source .env/bin/activate
+# install dependencies within your local env
+pip install -r requirements.txt
+
+Usage
+=====
+source .env/bin/activate
+python calibrate.py
