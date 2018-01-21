@@ -63,10 +63,10 @@ class Kossel:
 
     # config code to generate
     def m665_config(self, r):
-        return "M665 R{delta_radius} L{diagonal} B{bed_radius} H{homed_height} X{x} Y{y}".format(**r)
+        return "M665 R{delta_radius:0.3f} L{diagonal:0.3f} B{bed_radius:0.3f} H{homed_height:0.3f} X{x:0.3f} Y{y:0.3f}".format(**r)
 
     def m666_config(self, r):
-        return "M666 X{ea_x} Y{ea_y} Z{ea_z}".format(**r)
+        return "M666 X{ea_x:0.3f} Y{ea_y:0.3f} Z{ea_z:0.3f}".format(**r)
 
     # internal classes
     def _parse_answer(self, s, regexp):
@@ -174,24 +174,21 @@ def main():
         with open('objs.pkl') as f:  # Python 3: open(..., 'rb')
              tr32, tr665, tr666 = pickle.load(f)
 
-        for i in range(1, 6):
-            r32 = kossel.g32()
-            tr32.append(r32)
-            print r32
-            print "Deviation before/after : {deviation_before}/{deviation_after} gap = {gap}".format(**r32)
-            r665 = kossel.m665()
-            tr665.append(r665)
-            print r665
-            r666 = kossel.m666()
-            tr666.append(r666)
-            print r666
-
-            # Saving the objects:
-            with open('objs.pkl', 'w') as f:  # Python 3: open(..., 'wb')
-                pickle.dump([tr32, tr665, tr666], f)
-
-        c1 = ["gap"]
-        c2 = ["delta_radius", "homed_height", "x", "y", "z"]
+        # for i in range(1, 6):
+        #     r32 = kossel.g32()
+        #     tr32.append(r32)
+        #     print r32
+        #     print "Deviation before/after : {deviation_before}/{deviation_after} gap = {gap}".format(**r32)
+        #     r665 = kossel.m665()
+        #     tr665.append(r665)
+        #     print r665
+        #     r666 = kossel.m666()
+        #     tr666.append(r666)
+        #     print r666
+        #
+        #     # Saving the objects:
+        #     with open('objs.pkl', 'w') as f:  # Python 3: open(..., 'wb')
+        #         pickle.dump([tr32, tr665, tr666], f)
 
         def myplot(zone, item, fields):
             # Create linear regression object
@@ -205,25 +202,38 @@ def main():
                 print ly
                 print lx
                 regr.fit(lx, ly)
-                ly_pred = regr.predict(lx)
                 plt.scatter(lx, ly,  color='black')
+
+                lx.append([len(ly)+1])
+                ly_pred = regr.predict(lx)
                 plt.plot(lx, ly_pred, color='blue', linewidth=3)
+                plt.scatter(lx[-1], ly_pred[-1],  color='red')
+                plt.text(lx[-1][0], ly_pred[-1], str(round(ly_pred[-1],3)))
+
                 plt.xticks(())
                 plt.yticks(())
                 plt.ylabel(f)
 
+                # return prediction
+                return ly_pred[-1]
+
         plt.figure(1)
         myplot(331, tr32, ["gap"])
-        # col2 : M665
-        myplot(332, tr665, ["delta_radius"])
-        myplot(333, tr665, ["homed_height"])
-        myplot(334, tr665, ["x"])
-        myplot(335, tr665, ["y"])
 
-        # col3 : M666
-        myplot(337, tr666, ["ea_x"])
-        myplot(338, tr666, ["ea_y"])
-        myplot(339, tr666, ["ea_z"])
+        n665=tr665[-1]
+        n665["delta_radius"]=myplot(332, tr665, ["delta_radius"])
+        n665["homed_height"]=myplot(333, tr665, ["homed_height"])
+        n665["x"]=myplot(334, tr665, ["x"])
+        n665["y"]=myplot(335, tr665, ["y"])
+
+        n666=tr666[-1]
+        n666["ea_x"]=myplot(337, tr666, ["ea_x"])
+        n666["ea_y"]=myplot(338, tr666, ["ea_y"])
+        n666["ea_z"]=myplot(339, tr666, ["ea_z"])
+
+
+        print kossel.m665_config(n665)
+        print kossel.m666_config(n666)
         plt.show()
 
     except UnexpectedAnswerError as e:
