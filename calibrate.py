@@ -1,11 +1,10 @@
-#!/usr/bin/python
-#-*- coding: utf-8 -*-
 import requests
 import re
 import time
 import sys
 import codecs
 import random
+import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import datasets, linear_model
@@ -46,7 +45,7 @@ class Kossel:
         requests.get(self._url + "rr_gcode", {'gcode': gcode})
         result = unicode("")
         while len(result) == 0:
-            r = requests.get(URL + "rr_reply")
+            r = requests.get(self._url + "rr_reply")
             r.encoding = "utf-8"
             result = r.text
             time.sleep(1)
@@ -142,32 +141,40 @@ class KosselTestRandom(Kossel):
     def m665(self):
         return {
             "diagonal": 215.0,
-            "delta_radius": random.uniform(104.0,106.0),
-            "homed_height": random.uniform(233,234),
+            "delta_radius": random.uniform(104.0, 106.0),
+            "homed_height": random.uniform(233, 234),
             "bed_radius": 85.0,
-            "x": random.uniform(-2,2),
-            "y": random.uniform(-2,2),
-            "z": random.uniform(-2,2)
+            "x": random.uniform(-2, 2),
+            "y": random.uniform(-2, 2),
+            "z": random.uniform(-2, 2)
         }
 
     def m666(self):
         return {
-            "ea_x": random.uniform(-2,2),
-            "ea_y": random.uniform(-2,2),
-            "ea_z": random.uniform(-2,2),
-            "tx": random.uniform(-2,2),
-            "ty": random.uniform(-2,2)
+            "ea_x": random.uniform(-2, 2),
+            "ea_y": random.uniform(-2, 2),
+            "ea_z": random.uniform(-2, 2),
+            "tx": random.uniform(-2, 2),
+            "ty": random.uniform(-2, 2)
         }
 
 
 def main():
-    kossel = KosselTestRandom("http://minikossel-beefdeadfeed.local/")
+    #raw_input("WARNING : make sure you disable the web console otherwise this program will not work. Press enter when ready...")
+    kossel = Kossel("http://minikossel-beefdeadfeed.local/")
 
-    tr32=[]
-    tr665=[]
-    tr666=[]
+
+
+    tr32 = []
+    tr665 = []
+    tr666 = []
     try:
-        for i in range(1, 5):
+
+        # Getting back the objects:
+        with open('objs.pkl') as f:  # Python 3: open(..., 'rb')
+             tr32, tr665, tr666 = pickle.load(f)
+
+        for i in range(1, 6):
             r32 = kossel.g32()
             tr32.append(r32)
             print r32
@@ -179,32 +186,44 @@ def main():
             tr666.append(r666)
             print r666
 
-        c1=["gap"]
-        c2=["delta_radius","homed_height","x","y","z"]
-        def myplot(zone,item,fields):
+            # Saving the objects:
+            with open('objs.pkl', 'w') as f:  # Python 3: open(..., 'wb')
+                pickle.dump([tr32, tr665, tr666], f)
+
+        c1 = ["gap"]
+        c2 = ["delta_radius", "homed_height", "x", "y", "z"]
+
+        def myplot(zone, item, fields):
             # Create linear regression object
             regr = linear_model.LinearRegression()
             # Train the model using the training sets
             plt.subplot(zone)
             plt.grid(True)
             for f in fields:
-                l=list(map(lambda x: x.get(f), item))
-                regr.fit(l)
-                lpred=regr.predict(l)
-                plt.plot(l)
+                ly = list(map(lambda x: x.get(f), item))
+                lx = map(lambda x: [x], range(0, len(ly)))
+                print ly
+                print lx
+                regr.fit(lx, ly)
+                ly_pred = regr.predict(lx)
+                plt.scatter(lx, ly,  color='black')
+                plt.plot(lx, ly_pred, color='blue', linewidth=3)
+                plt.xticks(())
+                plt.yticks(())
                 plt.ylabel(f)
 
         plt.figure(1)
-        myplot(331,tr32,["gap"])
+        myplot(331, tr32, ["gap"])
         # col2 : M665
-        myplot(334,tr665,["delta_radius"])
-        myplot(335,tr665,["homed_height"])
-        myplot(336,tr665,["x","y"])
+        myplot(332, tr665, ["delta_radius"])
+        myplot(333, tr665, ["homed_height"])
+        myplot(334, tr665, ["x"])
+        myplot(335, tr665, ["y"])
 
         # col3 : M666
-        myplot(337,tr666,["ea_x","ea_y","ea_z"])
-        myplot(338,tr666,["tx","ty"])
-
+        myplot(337, tr666, ["ea_x"])
+        myplot(338, tr666, ["ea_y"])
+        myplot(339, tr666, ["ea_z"])
         plt.show()
 
     except UnexpectedAnswerError as e:

@@ -14,6 +14,7 @@ What it does is :
 Setup
 =====
 # create python virtualenv in order not to mess up your global python installation
+mkdir .env
 virtualenv .env
 # activate your environment
 source .env/bin/activate
@@ -23,4 +24,4 @@ pip install -r requirements.txt
 Usage
 =====
 source .env/bin/activate
-python calibrate.py
+python calibrate.pychgarde  Npup3JpkbGLMIkBCvA9M
