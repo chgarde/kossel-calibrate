@@ -158,12 +158,37 @@ class KosselTestRandom(Kossel):
             "ty": random.uniform(-2, 2)
         }
 
+def myplot(zone, item, f):
+    # Create linear regression object
+    regr = linear_model.LinearRegression()
+    # Train the model using the training sets
+    ax=plt.subplot(zone)
+    ax.grid(color='r', linestyle='dashed', linewidth=1)
+    plt.grid(True)
+
+    ly = list(map(lambda x: x.get(f), item))
+    lx = map(lambda x: [x], range(0, len(ly)))
+    print ly
+    print lx
+    regr.fit(lx, ly)
+    plt.scatter(lx, ly,  color='black')
+
+    lx.append([len(ly)+1])
+    ly_pred = regr.predict(lx)
+    plt.plot(lx, ly_pred, color='blue', linewidth=3)
+    plt.scatter(lx[-1], ly_pred[-1],  color='red')
+    plt.text(lx[-1][0], ly_pred[-1], str(round(ly_pred[-1],3)))
+    #
+    ax.set_title(f)
+    ax.set_xticklabels([])
+    ax.set_xmargin(0.8)
+    # return prediction
+    return ly_pred[-1]
+
 
 def main():
     #raw_input("WARNING : make sure you disable the web console otherwise this program will not work. Press enter when ready...")
     kossel = Kossel("http://minikossel-beefdeadfeed.local/")
-
-
 
     tr32 = []
     tr665 = []
@@ -172,7 +197,7 @@ def main():
 
         # Getting back the objects:
         with open('objs.pkl') as f:  # Python 3: open(..., 'rb')
-             tr32, tr665, tr666 = pickle.load(f)
+           tr32, tr665, tr666 = pickle.load(f)
 
         # for i in range(1, 6):
         #     r32 = kossel.g32()
@@ -190,46 +215,19 @@ def main():
         #     with open('objs.pkl', 'w') as f:  # Python 3: open(..., 'wb')
         #         pickle.dump([tr32, tr665, tr666], f)
 
-        def myplot(zone, item, fields):
-            # Create linear regression object
-            regr = linear_model.LinearRegression()
-            # Train the model using the training sets
-            plt.subplot(zone)
-            plt.grid(True)
-            for f in fields:
-                ly = list(map(lambda x: x.get(f), item))
-                lx = map(lambda x: [x], range(0, len(ly)))
-                print ly
-                print lx
-                regr.fit(lx, ly)
-                plt.scatter(lx, ly,  color='black')
-
-                lx.append([len(ly)+1])
-                ly_pred = regr.predict(lx)
-                plt.plot(lx, ly_pred, color='blue', linewidth=3)
-                plt.scatter(lx[-1], ly_pred[-1],  color='red')
-                plt.text(lx[-1][0], ly_pred[-1], str(round(ly_pred[-1],3)))
-
-                plt.xticks(())
-                plt.yticks(())
-                plt.ylabel(f)
-
-                # return prediction
-                return ly_pred[-1]
-
         plt.figure(1)
-        myplot(331, tr32, ["gap"])
+        myplot(331, tr32, "gap")
 
         n665=tr665[-1]
-        n665["delta_radius"]=myplot(332, tr665, ["delta_radius"])
-        n665["homed_height"]=myplot(333, tr665, ["homed_height"])
-        n665["x"]=myplot(334, tr665, ["x"])
-        n665["y"]=myplot(335, tr665, ["y"])
+        n665["delta_radius"]=myplot(332, tr665, "delta_radius")
+        n665["homed_height"]=myplot(333, tr665, "homed_height")
+        n665["x"]=myplot(334, tr665, "x")
+        n665["y"]=myplot(335, tr665, "y")
 
         n666=tr666[-1]
-        n666["ea_x"]=myplot(337, tr666, ["ea_x"])
-        n666["ea_y"]=myplot(338, tr666, ["ea_y"])
-        n666["ea_z"]=myplot(339, tr666, ["ea_z"])
+        n666["ea_x"]=myplot(337, tr666, "ea_x")
+        n666["ea_y"]=myplot(338, tr666, "ea_y")
+        n666["ea_z"]=myplot(339, tr666, "ea_z")
 
 
         print kossel.m665_config(n665)
@@ -240,6 +238,9 @@ def main():
         print "An unexpected answer was sent from the printer"
         print e.message
         print e.expression
+        with open('error.pkl', 'w') as f:  # Python 3: open(..., 'wb')
+            pickle.dump(e, f)
+
         raise
 
 
